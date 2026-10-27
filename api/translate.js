@@ -1,7 +1,7 @@
 const MAX_TEXT_LENGTH = 50000;
 const GOOGLE_CHUNK_CHARS = 1900;
 const MYMEMORY_MAX_CHARS = 4500;
-const MYMEMORY_CHUNK_BYTES = 420;
+const MYMEMORY_CHUNK_BYTES = 120;
 const GOOGLE_URL = "https://translate.googleapis.com/translate_a/single";
 const MYMEMORY_URL = "https://api.mymemory.translated.net/get";
 const RATE_WINDOW_MS = 60 * 1000;
