@@ -13,10 +13,11 @@
   let toastTimer;
   let requestController = null;
   let recognition = null;
+  let typingTimer = null;
+  let translationSequence = 0;
 
   const sourceText = $("source-text");
   const output = $("translated-text");
-  const translateButton = $("translate-button");
   const errorBox = $("error-box");
 
   function toast(message) {
@@ -31,11 +32,7 @@
     errorBox.hidden = false;
   }
   function clearError() { errorBox.hidden = true; errorBox.textContent = ""; }
-  function setBusy(busy) {
-    translateButton.disabled = busy;
-    translateButton.querySelector("span").textContent = busy ? "Перевожу…" : "Перевести";
-    $("translation-state").textContent = busy ? "Обработка…" : (lastTranslation ? "Переведено" : "Готов к переводу");
-  }
+  function setBusy(_busy) { /* Статусные надписи убраны из интерфейса. */ }
   function applyTheme(theme) {
     const allowed = ["system", "light", "dark"].includes(theme) ? theme : "system";
     document.documentElement.dataset.theme = allowed;
@@ -117,7 +114,7 @@
         sourceText.value = item.text; lastTranslation = item.translation;
         output.textContent = item.translation; output.classList.remove("placeholder");
         $("char-count").textContent = `${sourceText.value.length} / 5000`;
-        $("translation-state").textContent = "Из истории";
+        
         $("history-overlay").hidden = true;
         clearError(); window.scrollTo({top:0,behavior:"smooth"});
       };
@@ -133,53 +130,45 @@
     if (latin > cyrillic) return "en";
     return sourceLang;
   }
-  async function translate() {
+  async function translate(finalize = false) {
     const text = sourceText.value.trim();
+    const mySequence = ++translationSequence;
     clearError();
-    if (!text) { showError("Введите текст, который нужно перевести."); sourceText.focus(); return; }
+    if (!text) {
+      lastTranslation = "";
+      output.textContent = "";
+      output.classList.add("placeholder");
+      return;
+    }
     if (!navigator.onLine) {
-      showError("Сейчас нет подключения к интернету. Интерфейс и сохранённая история работают офлайн, но новый перевод требует доступа к переводческому сервису.");
+      if (finalize) showError("Для нового перевода нужно подключение к интернету.");
       return;
     }
     if (requestController) requestController.abort();
     requestController = new AbortController();
-    setBusy(true);
     try {
       const detected = detectLanguage(text);
       if (detected !== sourceLang && /[a-zа-яё]/i.test(text)) {
         sourceLang = detected; targetLang = detected === "ru" ? "en" : "ru"; updateLangUI();
       }
-      const params = new URLSearchParams({
-        q: text,
-        langpair: `${sourceLang}|${targetLang}`
-      });
+      const params = new URLSearchParams({ q: text, langpair: `${sourceLang}|${targetLang}` });
       const response = await fetch(`${API_URL}?${params.toString()}`, {
-        method: "GET",
-        signal: requestController.signal,
-        headers: { "Accept": "application/json" }
+        method: "GET", signal: requestController.signal, headers: { "Accept": "application/json" }
       });
-      if (!response.ok) throw new Error(response.status === 429 ? "Сервис временно ограничил запросы. Попробуйте немного позже." : `Сервис перевода ответил с кодом ${response.status}.`);
+      if (!response.ok) throw new Error(response.status === 429 ? "Сервис временно ограничил запросы. Попробуйте позже." : `Сервис перевода ответил с кодом ${response.status}.`);
       const data = await response.json();
-      if (data.responseStatus !== 200 || !data.responseData?.translatedText) {
-        const details = data.responseDetails || "Сервис не вернул перевод.";
-        throw new Error(details);
-      }
-      lastTranslation = decodeHtml(data.responseData.translatedText);
-      output.textContent = lastTranslation;
+      if (mySequence !== translationSequence || sourceText.value.trim() !== text) return;
+      if (data.responseStatus !== 200 || !data.responseData?.translatedText) throw new Error(data.responseDetails || "Сервис не вернул перевод.");
+      const translated = decodeHtml(data.responseData.translatedText);
+      lastTranslation = translated;
+      output.textContent = translated;
       output.classList.remove("placeholder");
-      $("translation-state").textContent = "Переведено";
-      saveHistory({text, translation:lastTranslation, from:sourceLang, to:targetLang, time:Date.now()});
-      toast("Перевод готов");
+      if (finalize) saveHistory({text, translation:translated, from:sourceLang, to:targetLang, time:Date.now()});
     } catch (err) {
-      if (err.name === "AbortError") return;
-      const message = err instanceof TypeError
-        ? "Не удалось подключиться к сервису перевода. Проверьте интернет или попробуйте позже."
-        : (err.message || "Не удалось выполнить перевод.");
-      showError(message);
-      $("translation-state").textContent = "Ошибка перевода";
+      if (err.name === "AbortError" || mySequence !== translationSequence) return;
+      if (finalize) showError(err instanceof TypeError ? "Не удалось подключиться к сервису перевода. Проверьте интернет." : (err.message || "Не удалось выполнить перевод."));
     } finally {
-      setBusy(false);
-      requestController = null;
+      if (mySequence === translationSequence) requestController = null;
     }
   }
   function decodeHtml(value) {
@@ -243,18 +232,72 @@
   $("swap-languages").addEventListener("click", swapLanguages);
   $("source-language").addEventListener("click", () => { toast("Язык исходного текста определяется автоматически. Используйте ↔, чтобы поменять направление."); });
   $("target-language").addEventListener("click", () => { toast("Доступны русский и английский. Используйте ↔, чтобы поменять направление."); });
-  $("translate-button").addEventListener("click", translate);
+  let lastWordRequest = "";
   $("source-text").addEventListener("input", () => {
     $("char-count").textContent = `${sourceText.value.length} / 5000`;
     clearError();
+    if (requestController) requestController.abort();
+    translationSequence++;
+    clearTimeout(typingTimer);
+    const text = sourceText.value.trim();
+    if (!text) {
+      lastTranslation = ""; lastWordRequest = "";
+      output.textContent = ""; output.classList.add("placeholder");
+      return;
+    }
+    // Быстрый предварительный перевод запускается сразу после завершения каждого слова.
+    const wordBoundary = /[\s.,!?;:…]$/.test(sourceText.value);
+    if (wordBoundary && text !== lastWordRequest) {
+      lastWordRequest = text;
+      translate(false);
+    }
+    // После паузы отправляем полный текст ещё раз и сохраняем итог в истории.
+    typingTimer = setTimeout(() => { lastWordRequest = text; translate(true); }, 850);
   });
   $("source-text").addEventListener("keydown", e => {
-    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") translate();
+    // Перевод запускается автоматически после короткой паузы при вводе.
   });
   $("clear-text").addEventListener("click", () => {
-    sourceText.value = ""; lastTranslation = ""; output.textContent = "Your translation will appear here.";
+    clearTimeout(typingTimer); translationSequence++; if (requestController) requestController.abort();
+    sourceText.value = ""; lastTranslation = ""; output.textContent = "";
     output.classList.add("placeholder"); $("char-count").textContent = "0 / 5000";
-    $("translation-state").textContent = "Готов к переводу"; clearError(); sourceText.focus();
+     clearError(); sourceText.focus();
+  });
+
+  $("brand-home").addEventListener("click", event => {
+    event.preventDefault();
+    sourceText.focus();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
+  $("photo-input-button").addEventListener("click", () => $("photo-input").click());
+  $("photo-input").addEventListener("change", async event => {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { toast("Выберите файл изображения."); return; }
+    if (file.size > 12 * 1024 * 1024) { toast("Фото слишком большое. Максимум 12 МБ."); return; }
+    toast("Распознаю текст на фото…");
+    
+    try {
+      if (!window.Tesseract) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js";
+          script.onload = resolve; script.onerror = () => reject(new Error("Не удалось загрузить распознавание текста. Проверьте интернет."));
+          document.head.append(script);
+        });
+      }
+      const result = await window.Tesseract.recognize(file, "eng+rus");
+      const extracted = (result.data.text || "").trim();
+      if (!extracted) { toast("Не удалось найти текст на фото.");  return; }
+      sourceText.value = extracted.slice(0, 5000);
+      $("char-count").textContent = `${sourceText.value.length} / 5000`;
+      clearError();
+      toast("Текст с фото распознан");
+      sourceText.dispatchEvent(new Event("input", { bubbles: true }));
+    } catch (err) {
+      showError(err.message || "Не удалось распознать текст на фото.");
+      
+    } finally { event.target.value = ""; }
   });
   $("copy-translation").addEventListener("click", copyTranslation);
   $("speak-translation").addEventListener("click", () => speak(lastTranslation, targetLang));
