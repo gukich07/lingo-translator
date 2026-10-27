@@ -1,7 +1,7 @@
 const MAX_TEXT_LENGTH = 50000;
-const GOOGLE_CHUNK_CHARS = 1900;
+const GOOGLE_CHUNK_CHARS = 3500;
 const MYMEMORY_MAX_CHARS = 4500;
-const MYMEMORY_CHUNK_BYTES = 120;
+const MYMEMORY_CHUNK_BYTES = 270;
 const GOOGLE_URL = "https://translate.googleapis.com/translate_a/single";
 const MYMEMORY_URL = "https://api.mymemory.translated.net/get";
 const RATE_WINDOW_MS = 60 * 1000;
@@ -131,7 +131,7 @@ async function translateWithGoogle(text, sourceLang, targetLang) {
       }
     }
     if (lastError) throw lastError;
-    if (i < chunks.length - 1) await wait(100);
+    if (i < chunks.length - 1) await wait(25);
   }
   return output.join("");
 }
@@ -194,7 +194,7 @@ async function translateWithMyMemory(text, sourceLang, targetLang) {
       throw new Error(String(data.responseDetails || "Резервный сервис перевода тоже недоступен."));
     }
     if (!success) throw new Error("Не удалось перевести текст резервным сервисом.");
-    if (i < chunks.length - 1) await wait(180);
+    if (i < chunks.length - 1) await wait(50);
   }
   return output.join("");
 }
