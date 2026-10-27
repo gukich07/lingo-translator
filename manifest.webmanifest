@@ -1,0 +1,13 @@
+{
+  "name": "Lingo — Русско-английский переводчик",
+  "short_name": "Lingo",
+  "description": "Быстрый перевод между русским и английским.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f6fa",
+  "theme_color": "#3568f5",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

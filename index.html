@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#1769ff">
+  <meta name="description" content="Быстрый русско-английский переводчик Lingo.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <title>Lingo — переводчик</title>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="./" aria-label="Lingo — главная">
+        <span class="brand-mark"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v7a2.5 2.5 0 0 1-2.5 2.5H12l-4.5 4v-4h-1A2.5 2.5 0 0 1 4 12.5z"/><path d="M8 8h8M8 11h5"/></svg></span>
+        <span><strong>lingo</strong><small>Переводчик</small></span>
+      </a>
+      <div class="top-actions">
+        <label class="theme-control" for="theme-select" title="Выбор оформления">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42"/></svg>
+          <select id="theme-select" aria-label="Тема оформления">
+            <option value="system">Авто</option>
+            <option value="light">Светлая</option>
+            <option value="dark">Тёмная</option>
+          </select>
+        </label>
+        <span class="status-pill"><i id="connection-dot"></i><span id="connection-label">Проверка сети…</span></span>
+        <button class="icon-button" id="history-toggle" title="История переводов" aria-label="История переводов">
+          <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 2.64-6.36L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <section class="intro">
+        <div class="eyebrow"><span class="sparkle">✦</span> YOUR WORDS, YOUR WORLD</div>
+        <h1>Слова без<br class="mobile-break"> <span>границ.</span></h1>
+        <p>Быстрый перевод между русским и английским — без лишнего.</p>
+      </section>
+
+      <section class="translator-card" aria-label="Переводчик">
+        <div class="language-bar">
+          <button class="language-select active" id="source-language" data-lang="ru">
+            <span class="lang-code">RU</span><span id="source-name">Русский</span><svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg>
+          </button>
+          <button class="swap-button" id="swap-languages" title="Поменять языки местами" aria-label="Поменять языки местами">
+            <svg viewBox="0 0 24 24"><path d="M7 7h13l-3-3M20 7l-3 3M17 17H4l3 3M4 17l3-3"/></svg>
+          </button>
+          <button class="language-select target" id="target-language" data-lang="en">
+            <span class="lang-code">EN</span><span id="target-name">English</span><svg viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></svg>
+          </button>
+        </div>
+
+        <div class="editor-grid">
+          <div class="editor-pane">
+            <div class="pane-label"><span id="source-label">ИСХОДНЫЙ ТЕКСТ</span><span id="char-count">0 / 5000</span></div>
+            <textarea id="source-text" maxlength="5000" spellcheck="true" placeholder="Введите текст для перевода…" aria-label="Текст для перевода"></textarea>
+            <div class="pane-tools">
+              <button class="tool-button" id="voice-input" title="Голосовой ввод"><svg viewBox="0 0 24 24"><rect x="9" y="2.5" width="6" height="12" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V22M8.5 22h7"/></svg><span>Голос</span></button>
+              <div class="right-tools">
+                <button class="tool-button" id="clear-text" title="Очистить текст"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 14h10l1-14M9 7V4h6v3"/></svg><span>Очистить</span></button>
+              </div>
+            </div>
+          </div>
+          <div class="editor-pane result-pane">
+            <div class="pane-label"><span>ПЕРЕВОД</span><span id="translation-state">Готов к переводу</span></div>
+            <div id="translated-text" class="translation-output" aria-live="polite">Your translation will appear here.</div>
+            <div class="pane-tools">
+              <button class="tool-button" id="speak-translation" title="Прослушать перевод"><svg viewBox="0 0 24 24"><path d="M4 10v4h4l5 4V6l-5 4zM17 9a5 5 0 0 1 0 6M19 6a9 9 0 0 1 0 12"/></svg><span>Озвучить</span></button>
+              <div class="right-tools">
+                <button class="tool-button" id="copy-translation" title="Копировать перевод"><svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h3"/></svg><span>Копировать</span></button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="translate-footer">
+          <div class="api-note"><span class="live-dot"></span><span id="api-note-text">Перевод через онлайн-сервис</span></div>
+          <button class="translate-button" id="translate-button"><span>Перевести</span><svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        </div>
+        <div id="error-box" class="error-box" role="alert" hidden></div>
+      </section>
+
+      <section class="quick-info">
+        <div class="info-item"><span class="info-icon">↔</span><div><strong>2 языка</strong><small>RU ⇄ EN</small></div></div>
+        <div class="info-item"><span class="info-icon">◷</span><div><strong>История</strong><small>На этом устройстве</small></div></div>
+        <div class="info-item"><span class="info-icon">⌁</span><div><strong>Офлайн-режим</strong><small>Приложение и история</small></div></div>
+      </section>
+      <footer><span>LINGO © <span id="year"></span></span><span>Перевод предоставляется сторонним сервисом</span></footer>
+    </main>
+  </div>
+
+  <div class="overlay" id="history-overlay" hidden>
+    <aside class="history-panel" role="dialog" aria-modal="true" aria-labelledby="history-title">
+      <div class="history-head"><div><div class="eyebrow">ВАШИ ПЕРЕВОДЫ</div><h2 id="history-title">История</h2></div><button class="icon-button" id="close-history" aria-label="Закрыть историю"><svg viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></svg></button></div>
+      <div class="history-content" id="history-list"></div>
+      <div class="history-bottom"><button class="secondary-button" id="clear-history">Очистить историю</button></div>
+    </aside>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="app.js" defer></script>
+</body>
+</html>
