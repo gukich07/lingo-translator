@@ -9,8 +9,8 @@
   const MAX_HISTORY = 100;
   // MyMemory limits individual requests, so long texts are translated in smaller chunks.
   const MAX_TEXT_LENGTH = 50000;
-  const MYMEMORY_CHUNK_BYTES = 120;
-  const GOOGLE_CHUNK_CHARS = 1900;
+  const MYMEMORY_CHUNK_BYTES = 270;
+  const GOOGLE_CHUNK_CHARS = 3500;
   const MYMEMORY_MAX_CHARS = 4500;
   const LIVE_PREVIEW_MAX_CHARS = 1200;
   const LIVE_PREVIEW_INTERVAL_MS = 650;
@@ -313,7 +313,7 @@
       }
       if (lastError) throw lastError;
       if (onProgress) onProgress(translatedParts.join(""), i + 1, chunks.length);
-      if (i < chunks.length - 1) await sleep(100, signal);
+      if (i < chunks.length - 1) await sleep(25, signal);
     }
     return translatedParts.join("");
   }
